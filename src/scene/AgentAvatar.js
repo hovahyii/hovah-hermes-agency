@@ -11,6 +11,7 @@ export class AgentAvatar {
         this.moveProgress = 0;
         this.moveDuration = 1.5; // seconds
         this.moveStartTime = 0;
+        this.currentStatus = 'idle';
         
         // Station positions (matching FloorScene workstation layout)
         this.stationPositions = {
@@ -304,9 +305,13 @@ export class AgentAvatar {
                 this.particles.visible = false;
             }
         } else {
-            // Idle animation
+            // Desk / Idle animation
             this.group.position.y = this.bobOffset;
-            this.animateIdle(time);
+            if (this.currentStatus === 'working' || this.currentStatus === 'thinking') {
+                this.animateTyping(time);
+            } else {
+                this.animateIdle(time);
+            }
         }
         
         // Core pulse
@@ -361,6 +366,8 @@ export class AgentAvatar {
         // Subtle breathing
         const breathe = Math.sin(time * 1.5) * 0.015;
         this.head.position.y = 1.65 + breathe;
+        this.head.rotation.x = 0;
+        this.head.rotation.y = 0;
         
         // Subtle arm sway
         this.arms.forEach((arm, i) => {
@@ -392,6 +399,37 @@ export class AgentAvatar {
         });
         
         this.head.position.y = 1.65;
+        this.head.rotation.x = 0;
+        this.head.rotation.y = 0;
+    }
+    
+    animateTyping(time) {
+        // Subtle breathing
+        const breathe = Math.sin(time * 1.5) * 0.015;
+        this.head.position.y = 1.65 + breathe;
+        
+        // Minor head bobbing while working, reading the screen
+        this.head.rotation.x = 0.15 + Math.sin(time * 2) * 0.02;
+        this.head.rotation.y = Math.sin(time * 1.2) * 0.04;
+        
+        // Typing arm motions
+        this.arms.forEach((arm, i) => {
+            const phase = i === 0 ? 0 : Math.PI;
+            // Shoulders slightly raised and pitched forward for typing
+            arm.upperArm.rotation.x = -0.4 + Math.sin(time * 18 + phase) * 0.05;
+            arm.upperArm.rotation.z = arm.side * -0.25;
+            
+            // Forearms up over a desk, rapid typing movements
+            arm.lowerArm.rotation.x = -0.7 + Math.cos(time * 24 + phase) * 0.1;
+            arm.lowerArm.rotation.z = arm.side * 0.1;
+        });
+        
+        // Reset legs
+        this.legs.forEach(leg => {
+            leg.thigh.rotation.x = 0;
+            leg.calf.rotation.x = 0;
+            leg.foot.rotation.x = 0;
+        });
     }
     
     animateParticles(delta) {
@@ -437,6 +475,8 @@ export class AgentAvatar {
     }
     
     setStatus(status) {
+        this.currentStatus = status;
+        
         // Update status ring color based on agent status
         const colors = {
             'idle': 0x586b8a,

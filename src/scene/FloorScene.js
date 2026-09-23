@@ -26,24 +26,12 @@ export class FloorScene {
         this.camera.position.copy(this.cameraPosition);
         this.camera.lookAt(this.cameraTarget);
         
-        // OrbitControls with enableDamping
-        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-        this.controls.enableDamping = true;
-        this.controls.dampingFactor = 0.05;
-        this.controls.enablePan = true;
-        this.controls.enableZoom = true;
-        this.controls.enableRotate = true;
-        this.controls.screenSpacePanning = false;
-        this.controls.minDistance = 10;
-        this.controls.maxDistance = 60;
-        this.controls.maxPolarAngle = Math.PI / 2.2;
-        
         // Camera follow settings
         this.followEnabled = true;
         this.followLerp = 0.05;
         this.followOffset = new THREE.Vector3(0, 2, 0); // Look slightly above avatar
         
-        // Renderer
+        // Renderer (must be created BEFORE OrbitControls)
         this.renderer = new THREE.WebGLRenderer({ 
             antialias: true, 
             alpha: true,
@@ -56,6 +44,18 @@ export class FloorScene {
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
         this.renderer.toneMappingExposure = 1.0;
         this.container.appendChild(this.renderer.domElement);
+        
+        // OrbitControls with enableDamping (requires renderer.domElement)
+        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+        this.controls.enableDamping = true;
+        this.controls.dampingFactor = 0.05;
+        this.controls.enablePan = true;
+        this.controls.enableZoom = true;
+        this.controls.enableRotate = true;
+        this.controls.screenSpacePanning = false;
+        this.controls.minDistance = 10;
+        this.controls.maxDistance = 60;
+        this.controls.maxPolarAngle = Math.PI / 2.2;
         
         // Workstations
         this.workstations = [];

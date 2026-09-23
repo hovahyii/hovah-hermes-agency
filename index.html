@@ -3,85 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Agent Command Center</title>
+    <title>Hovah Hermes — AI Agent Command Center</title>
+    <meta name="description" content="Real-time monitoring dashboard for the Hovah Hermes AI Agent system">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+    <!-- Loading Screen -->
     <div class="loading-overlay" id="loading-overlay">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">Initializing Command Center...</div>
+        <div class="loading-content">
+            <div class="loading-orb">
+                <div class="loading-orb-inner"></div>
+                <div class="loading-orb-ring"></div>
+                <div class="loading-orb-ring loading-orb-ring--2"></div>
+            </div>
+            <div class="loading-text">Initializing Command Center</div>
+            <div class="loading-bar"><div class="loading-bar-fill"></div></div>
+        </div>
     </div>
 
     <div id="app">
-        <!-- Top Dashboard Bar -->
-        <header class="top-dashboard" id="top-dashboard"></header>
-
-        <!-- Tab Bar -->
-        <nav class="tab-bar" id="tab-bar" role="tablist"></nav>
-
-        <!-- Main Content Area -->
-        <main class="main-content" id="main-content">
-            <!-- Left Sidebar -->
-            <aside class="sidebar-left" id="sidebar-left" role="complementary">
-                <div class="sidebar-section">
-                    <h3 class="sidebar-title">WORKSTATIONS</h3>
-                    <div class="workstation-list" id="workstation-list"></div>
+        <!-- ─── Top Header Bar ─── -->
+        <header class="header" id="header">
+            <div class="header__left">
+                <div class="header__logo">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                    </svg>
                 </div>
-                <div class="sidebar-section">
-                    <h3 class="sidebar-title">QUICK ACTIONS</h3>
-                    <div class="quick-actions" id="quick-actions"></div>
+                <div class="header__info">
+                    <h1 class="header__title">Hermes Agent</h1>
+                    <span class="header__badge" id="connection-badge">Connecting…</span>
                 </div>
-            </aside>
+            </div>
 
-            <!-- 3D Workspace (Center) -->
-            <section class="workspace-3d" id="workspace-3d">
-                <div class="canvas-wrapper">
-                    <div id="canvas-container"></div>
-                    <div class="canvas-overlay" id="canvas-overlay"></div>
+            <div class="header__metrics" id="header-metrics">
+                <div class="header__metric-group">
+                    <div class="header__metric">
+                        <span class="header__metric-label">Status</span>
+                        <span class="header__metric-value" id="hdr-status">Idle</span>
+                    </div>
+                    <div class="header__divider"></div>
+                    <div class="header__metric">
+                        <span class="header__metric-label">Model</span>
+                        <span class="header__metric-value" id="hdr-model">—</span>
+                    </div>
+                    <div class="header__divider"></div>
+                    <div class="header__metric">
+                        <span class="header__metric-label">Tokens</span>
+                        <span class="header__metric-value mono" id="hdr-tokens">0</span>
+                    </div>
                 </div>
+            </div>
+
+            <div class="header__right">
+                <div class="header__task-pill" id="hdr-task-pill">
+                    <span class="header__pill-dot" id="hdr-pill-dot"></span>
+                    <span class="header__pill-value" id="hdr-task">No active task</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- ─── Tab Navigation ─── -->
+        <nav class="tabs" id="tab-bar" role="tablist"></nav>
+
+        <!-- ─── Main Layout ─── -->
+        <main class="layout" id="layout">
+            <!-- 3D Scene Area (always present) -->
+            <section class="scene-wrap" id="scene-wrap">
+                <div class="scene-canvas" id="canvas-container"></div>
+                <div class="scene-overlay" id="canvas-overlay"></div>
             </section>
 
-            <!-- Right Activity Panel -->
-            <aside class="panel-right" id="panel-right" role="complementary">
-                <div class="panel-header">
-                    <h3>LIVE ACTIVITY</h3>
-                    <button class="panel-action-btn" id="clear-activity" aria-label="Clear activity log">Clear</button>
+            <!-- Right Sidebar -->
+            <aside class="sidebar" id="sidebar">
+                <div class="sidebar__block">
+                    <div class="sidebar__block-header">
+                        <h3>Live Activity</h3>
+                        <button class="btn-ghost" id="clear-activity">Clear</button>
+                    </div>
+                    <div class="sidebar__feed" id="activity-list"></div>
                 </div>
-                <div class="activity-list" id="activity-list"></div>
-                
-                <div class="panel-divider"></div>
-                
-                <div class="panel-header">
-                    <h3>EXECUTION STATUS</h3>
-                </div>
-                <div class="execution-status" id="execution-status">
-                    <div class="execution-item">
-                        <span class="execution-label">Current Task</span>
-                        <span class="execution-value" id="exec-task">No active task</span>
-                    </div>
-                    <div class="execution-item">
-                        <span class="execution-label">Model</span>
-                        <span class="execution-value" id="exec-model">—</span>
-                    </div>
-                    <div class="execution-item">
-                        <span class="execution-label">Status</span>
-                        <span class="execution-value" id="exec-status">Idle</span>
-                    </div>
-                    <div class="execution-item">
-                        <span class="execution-label">Progress</span>
-                        <div class="execution-progress">
-                            <div class="execution-progress-bar" id="exec-progress-bar"></div>
+                <div class="sidebar__divider"></div>
+                <div class="sidebar__block">
+                    <h3>Execution Status</h3>
+                    <div class="exec-grid" id="exec-grid">
+                        <div class="exec-row">
+                            <span class="exec-label">Current Task</span>
+                            <span class="exec-value" id="exec-task">No active task</span>
                         </div>
-                        <span class="execution-value" id="exec-progress-text">0%</span>
+                        <div class="exec-row">
+                            <span class="exec-label">Model</span>
+                            <span class="exec-value" id="exec-model">—</span>
+                        </div>
+                        <div class="exec-row">
+                            <span class="exec-label">Status</span>
+                            <span class="exec-value" id="exec-status">Idle</span>
+                        </div>
+                        <div class="exec-row">
+                            <span class="exec-label">Progress</span>
+                            <div class="exec-progress">
+                                <div class="exec-progress__fill" id="exec-progress-bar"></div>
+                            </div>
+                            <span class="exec-value mono" id="exec-progress-text">0%</span>
+                        </div>
                     </div>
                 </div>
             </aside>
         </main>
 
-        <!-- Tab Panels (Overlay) -->
-        <div class="tab-panels-container" id="tab-panels-container"></div>
+        <!-- ─── Tab Panels Container ─── -->
+        <div class="panels-container" id="tab-panels-container"></div>
+
+        <!-- ─── Toast Container ─── -->
+        <div class="toast-container" id="toast-container"></div>
     </div>
 
     <script type="module" src="/src/main.js"></script>
