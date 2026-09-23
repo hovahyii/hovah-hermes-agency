@@ -6,8 +6,17 @@ export class UIManager {
         this.activeTab = 'floor';
         this.tabs = ['floor', 'tasks', 'workflow', 'models', 'logs', 'analytics'];
         
-        this.activityPanel = null;
-        this.topDashboard = null;
+        // DOM element references
+        this.topDashboard = document.getElementById('top-dashboard');
+        this.tabBar = document.getElementById('tab-bar');
+        this.mainContent = document.getElementById('main-content');
+        this.workstationList = document.getElementById('workstation-list');
+        this.quickActions = document.getElementById('quick-actions');
+        this.activityList = document.getElementById('activity-list');
+        this.executionStatus = document.getElementById('execution-status');
+        this.canvasContainer = document.getElementById('canvas-container');
+        this.tabPanelsContainer = document.getElementById('tab-panels-container');
+        
         this.tabPanels = new Map();
         this.toastContainer = null;
         
@@ -15,10 +24,10 @@ export class UIManager {
     }
 
     async init() {
-        this.createTopDashboard();
+        this.populateWorkstationList();
+        this.populateQuickActions();
         this.createTabBar();
         this.createTabPanels();
-        this.createActivityPanel();
         this.createToastContainer();
         this.bindEvents();
         this.startUpdateLoop();
@@ -27,61 +36,107 @@ export class UIManager {
         this.setActiveTab('floor');
     }
 
-    createTopDashboard() {
-        const dashboard = document.createElement('div');
-        dashboard.className = 'top-dashboard';
-        dashboard.innerHTML = `
-            <div class="command-brand">
-                <span class="brand-orb"></span>
-                <div><strong>AI Agent Command Center</strong><small>One agent · live execution view</small></div>
+    populateWorkstationList() {
+        if (!this.workstationList) return;
+        
+        const workstations = [
+            { id: 'command-desk', name: 'Command Desk', icon: 'hub' },
+            { id: 'planning-desk', name: 'Planning Desk', icon: 'planning' },
+            { id: 'nemotron-station', name: 'Nemotron Station', icon: 'model' },
+            { id: 'mimo-station', name: 'MiMo Station', icon: 'model' },
+            { id: 'openrouter-station', name: 'OpenRouter Station', icon: 'model' },
+            { id: 'browser-station', name: 'Browser Station', icon: 'tool' },
+            { id: 'terminal-station', name: 'Terminal Station', icon: 'tool' },
+            { id: 'coding-station', name: 'Coding Station', icon: 'tool' },
+            { id: 'files-station', name: 'Files Station', icon: 'tool' },
+            { id: 'memory-station', name: 'Memory Station', icon: 'tool' }
+        ];
+        
+        this.workstationList.innerHTML = workstations.map(ws => `
+            <div class="workstation-item" data-station-id="${ws.id}">
+                <svg class="workstation-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    ${this.getWorkstationIcon(ws.icon)}
+                </svg>
+                <span>${ws.name}</span>
             </div>
-            <div class="dashboard-section status-section">
-                <div class="dashboard-label">Agent Status</div>
-                <div class="dashboard-value" id="agent-status">
-                    <span class="status-indicator" id="status-indicator"></span>
-                    <span id="status-text">Online</span>
-                </div>
-            </div>
-            <div class="dashboard-section model-section">
-                <div class="dashboard-label">Current Model</div>
-                <div class="dashboard-value" id="current-model">
-                    <span class="model-badge" id="model-badge">Nemotron</span>
-                </div>
-            </div>
-            <div class="dashboard-section task-section">
-                <div class="dashboard-label">Current Task</div>
-                <div class="dashboard-value" id="current-task">
-                    <span id="task-name">Idle</span>
-                </div>
-            </div>
-            <div class="dashboard-section progress-section">
-                <div class="dashboard-label">Task Progress</div>
-                <div class="dashboard-value">
-                    <div class="progress-bar" id="progress-bar">
-                        <div class="progress-fill" id="progress-fill"></div>
-                    </div>
-                    <span id="progress-text">0%</span>
-                </div>
-            </div>
-            <div class="dashboard-section runtime-section">
-                <div class="dashboard-label">Runtime</div>
-                <div class="dashboard-value" id="runtime">00:00.000</div>
-            </div>
-            <div class="dashboard-section tokens-section">
-                <div class="dashboard-label">Tokens</div>
-                <div class="dashboard-value" id="tokens">
-                    <span id="tokens-in">0</span> in / <span id="tokens-out">0</span> out
-                </div>
-            </div>
-        `;
-        document.body.appendChild(dashboard);
-        this.topDashboard = dashboard;
+        `).join('');
+        
+        // Bind click events
+        this.workstationList.querySelectorAll('.workstation-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const stationId = item.dataset.stationId;
+                this.showStationDetails(stationId);
+                // Highlight active station
+                this.workstationList.querySelectorAll('.workstation-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+            });
+        });
+    }
+
+    getWorkstationIcon(type) {
+        switch(type) {
+            case 'hub': return '<circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>';
+            case 'planning': return '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/>';
+            case 'model': return '<rect x="2" y="2" width="20" height="20" rx="2"/><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/>';
+            case 'tool': default: return '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.77z"/>';
+        }
+    }
+
+    populateQuickActions() {
+        if (!this.quickActions) return;
+        
+        const actions = [
+            { id: 'new-task', name: 'New Task', icon: '<path d="M12 5v14M5 12h14"/>' },
+            { id: 'pause', name: 'Pause Agent', icon: '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>' },
+            { id: 'resume', name: 'Resume', icon: '<polygon points="5 3 19 12 5 21 5 3"/>' },
+            { id: 'stop', name: 'Stop', icon: '<rect x="3" y="3" width="18" height="18" rx="2"/>' },
+            { id: 'logs', name: 'View Logs', icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>' },
+            { id: 'settings', name: 'Settings', icon: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>' }
+        ];
+        
+        this.quickActions.innerHTML = actions.map(action => `
+            <button class="quick-action-btn" data-action="${action.id}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    ${action.icon}
+                </svg>
+                <span>${action.name}</span>
+            </button>
+        `).join('');
+        
+        // Bind action events
+        this.quickActions.querySelectorAll('.quick-action-btn').forEach(btn => {
+            btn.addEventListener('click', () => this.handleQuickAction(btn.dataset.action));
+        });
+    }
+
+    handleQuickAction(actionId) {
+        console.log('[UIManager] Quick action:', actionId);
+        switch(actionId) {
+            case 'new-task':
+                this.showToast('Creating new task...', 'info');
+                break;
+            case 'pause':
+                this.showToast('Agent paused', 'warning');
+                break;
+            case 'resume':
+                this.showToast('Agent resumed', 'success');
+                break;
+            case 'stop':
+                this.showToast('Agent stopped', 'error');
+                break;
+            case 'logs':
+                this.setActiveTab('logs');
+                break;
+            case 'settings':
+                this.showToast('Settings panel coming soon', 'info');
+                break;
+        }
     }
 
     createTabBar() {
-        const tabBar = document.createElement('div');
-        tabBar.className = 'tab-bar';
-        tabBar.innerHTML = `
+        if (!this.tabBar) return;
+        
+        this.tabBar.innerHTML = `
             <div class="tab-buttons">
                 <button class="tab-btn active" data-tab="floor">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -137,8 +192,6 @@ export class UIManager {
                 </button>
             </div>
         `;
-        document.body.appendChild(tabBar);
-        this.tabBar = tabBar;
     }
 
     createTabPanels() {
@@ -237,40 +290,54 @@ export class UIManager {
         panel.className = `tab-panel ${id === 'floor' ? 'active' : ''}`;
         panel.id = `panel-${id}`;
         panel.innerHTML = content;
-        document.body.appendChild(panel);
+        this.tabPanelsContainer.appendChild(panel);
         return panel;
     }
 
-    createActivityPanel() {
-        const panel = document.createElement('div');
-        panel.className = 'activity-panel';
-        panel.innerHTML = `
-            <div class="activity-header">
-                <h3>Live Activity</h3>
-                <button class="clear-activity-btn" id="clear-activity">Clear</button>
+    renderActivity() {
+        if (!this.activityList) return;
+        
+        const activities = this.agentState.activityLog.slice(0, 20);
+        
+        this.activityList.innerHTML = activities.map(activity => `
+            <div class="activity-item ${activity.type}">
+                <div class="activity-time">${this.formatTime(activity.timestamp)}</div>
+                <div class="activity-content">
+                    <div class="activity-model ${activity.model}">${activity.model}</div>
+                    <div class="activity-action">${activity.action}</div>
+                    <div class="activity-task">${activity.task}</div>
+                </div>
+                <div class="activity-status ${activity.status}">${activity.status}</div>
+                ${activity.duration ? `<div class="activity-duration">${this.formatDuration(activity.duration)}</div>` : ''}
             </div>
-            <div class="activity-list" id="activity-list"></div>
-        `;
-        document.body.appendChild(panel);
-        this.activityPanel = panel;
+        `).join('');
+    }
 
-        const executionBar = document.createElement('div');
-        executionBar.className = 'execution-bar';
-        executionBar.innerHTML = `
-            <span class="execution-kicker">ACTIVE EXECUTION</span>
-            <span class="execution-task" id="execution-task">No active task</span>
-            <span class="execution-hint">Avatar moves only when the connected agent changes state</span>
-        `;
-        document.body.appendChild(executionBar);
-        this.executionBar = executionBar;
+    renderExecutionStatus() {
+        const state = this.agentState.getState();
+        
+        // Update execution status panel
+        const execTask = document.getElementById('exec-task');
+        const execModel = document.getElementById('exec-model');
+        const execStatus = document.getElementById('exec-status');
+        const execProgressBar = document.getElementById('exec-progress-bar');
+        const execProgressText = document.getElementById('exec-progress-text');
+        
+        if (execTask) execTask.textContent = state.currentTask?.name || 'No active task';
+        if (execModel) execModel.textContent = state.currentModel || '—';
+        if (execStatus) execStatus.textContent = state.status.charAt(0).toUpperCase() + state.status.slice(1);
+        if (execProgressBar) execProgressBar.style.width = `${state.taskProgress}%`;
+        if (execProgressText) execProgressText.textContent = `${Math.round(state.taskProgress)}%`;
     }
 
     createToastContainer() {
-        const container = document.createElement('div');
-        container.className = 'toast-container';
-        container.id = 'toast-container';
-        document.body.appendChild(container);
-        this.toastContainer = container;
+        if (!this.toastContainer) {
+            const container = document.createElement('div');
+            container.className = 'toast-container';
+            container.id = 'toast-container';
+            document.body.appendChild(container);
+            this.toastContainer = container;
+        }
     }
 
     bindEvents() {
@@ -314,6 +381,11 @@ export class UIManager {
             this.agentState.toolCalls = [];
             this.renderLogs();
         });
+        
+        // Log level filter
+        document.getElementById('log-level-filter')?.addEventListener('change', () => {
+            this.renderLogs();
+        });
     }
 
     setActiveTab(tab) {
@@ -331,6 +403,11 @@ export class UIManager {
             panel.classList.toggle('active', id === tab);
         });
         
+        // Re-render panels when activated
+        if (tab === 'tasks') this.renderTasks();
+        if (tab === 'models') this.updateModelsPanel();
+        if (tab === 'logs') this.renderLogs();
+        if (tab === 'analytics') this.updateAnalyticsPanel();
     }
 
     startUpdateLoop() {
@@ -340,7 +417,8 @@ export class UIManager {
     update() {
         this.updateTopDashboard();
         this.updateExecutionBoard();
-        this.updateActivityPanel();
+        this.renderActivity();
+        this.renderExecutionStatus();
         this.updateModelsPanel();
         this.updateAnalyticsPanel();
     }
@@ -348,7 +426,7 @@ export class UIManager {
     updateTopDashboard() {
         const state = this.agentState.getState();
         
-        // Status
+        // Status - using existing DOM elements from index.html
         const statusIndicator = document.getElementById('status-indicator');
         const statusText = document.getElementById('status-text');
         if (statusIndicator && statusText) {
@@ -730,10 +808,11 @@ export class UIManager {
             clearInterval(this.updateInterval);
         }
         
-        this.topDashboard?.remove();
-        this.tabBar?.remove();
-        this.tabPanels.forEach(panel => panel.remove());
-        this.activityPanel?.remove();
-        this.toastContainer?.remove();
+        // Don't remove DOM elements - they're part of index.html template
+        // Just clear references
+        this.tabPanels.forEach(panel => {
+            panel.innerHTML = '';
+        });
+        this.tabPanels.clear();
     }
 }
