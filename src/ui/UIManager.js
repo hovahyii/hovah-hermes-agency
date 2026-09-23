@@ -335,7 +335,7 @@ export class UIManager {
             const container = document.createElement('div');
             container.className = 'toast-container';
             container.id = 'toast-container';
-            document.body.appendChild(container);
+            document.getElementById('app').appendChild(container);
             this.toastContainer = container;
         }
     }

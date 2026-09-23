@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { AgentAvatar } from './AgentAvatar.js';
 
 export class FloorScene {
@@ -11,19 +12,31 @@ export class FloorScene {
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x05080d);
         
-        // Camera - PerspectiveCamera for 3D depth
+        // Camera - PerspectiveCamera fov=35
         this.camera = new THREE.PerspectiveCamera(
-            45, // FOV - narrower for isometric-like view
+            35, // FOV as specified
             this.width / this.height,
             0.1,
             200
         );
         
-        // Isometric-like camera position (elevated, angled)
-        this.cameraPosition = new THREE.Vector3(12, 14, 12);
+        // Camera position (20, 25, 20), target (0, 0, 0) as specified
+        this.cameraPosition = new THREE.Vector3(20, 25, 20);
         this.cameraTarget = new THREE.Vector3(0, 0, 0);
         this.camera.position.copy(this.cameraPosition);
         this.camera.lookAt(this.cameraTarget);
+        
+        // OrbitControls with enableDamping
+        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+        this.controls.enableDamping = true;
+        this.controls.dampingFactor = 0.05;
+        this.controls.enablePan = true;
+        this.controls.enableZoom = true;
+        this.controls.enableRotate = true;
+        this.controls.screenSpacePanning = false;
+        this.controls.minDistance = 10;
+        this.controls.maxDistance = 60;
+        this.controls.maxPolarAngle = Math.PI / 2.2;
         
         // Camera follow settings
         this.followEnabled = true;
@@ -525,6 +538,11 @@ export class FloorScene {
         this.renderer.setSize(this.width, this.height);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         
+        // Update OrbitControls target
+        if (this.controls) {
+            this.controls.target.copy(this.cameraTarget);
+        }
+        
         this.frameScene();
     }
     
@@ -596,6 +614,11 @@ export class FloorScene {
     
     update(delta) {
         this.time += delta;
+        
+        // Update OrbitControls
+        if (this.controls) {
+            this.controls.update();
+        }
         
         // Update avatar
         this.avatar.update(delta, this.time);
